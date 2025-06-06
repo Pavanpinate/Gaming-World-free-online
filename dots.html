@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dots and Boxes - You vs Friend or Bot</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #6b7280;
+      --heading: #111827;
+      --player-you: #2563eb;   /* Blue */
+      --player-friend: #059669; /* Green */
+      --player-bot: #ea580c;   /* Orange */
+      --line-unclaimed: #d1d5db;
+      --line-hover: #93c5fd;
+      --dot-size: 14px;
+      --edge-thickness: 12px;
+      --box-size: 60px;
+      --border-radius: 0.75rem;
+      --transition-duration: 0.25s;
+      font-size: 16px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+        Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+      min-height: 100vh;
+      user-select: none;
+    }
+    h1 {
+      font-weight: 700;
+      font-size: 3rem;
+      color: var(--heading);
+      margin: 0 0 0.8rem;
+      user-select: none;
+      text-align: center;
+      max-width: 640px;
+    }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      width: 100%;
+      max-width: 640px;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .control-group label {
+      font-weight: 600;
+      color: var(--heading);
+    }
+    .selectors {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    }
+    .mode-select {
+      display: flex;
+      gap: 1rem;
+      user-select: none;
+    }
+    .size-select {
+      display: flex;
+      gap: 1rem;
+      user-select: none;
+    }
+    .mode-btn, .size-btn {
+      background-color: var(--line-unclaimed);
+      border: none;
+      border-radius: var(--border-radius);
+      padding: 0.6rem 1.2rem;
+      font-weight: 700;
+      font-family: inherit;
+      font-size: 1rem;
+      cursor: pointer;
+      color: var(--heading);
+      box-shadow: 0 2px 6px rgb(0 0 0 / 0.06);
+      transition: background-color var(--transition-duration), color var(--transition-duration), box-shadow var(--transition-duration);
+      user-select: none;
+    }
+    .mode-btn.active, .size-btn.active {
+      background-color: var(--player-you);
+      color: white;
+      box-shadow: 0 4px 14px rgb(37 99 235 / 0.6);
+      cursor: default;
+    }
+    .mode-btn:not(.active):hover, .size-btn:not(.active):hover {
+      background-color: var(--line-hover);
+      color: var(--heading);
+      box-shadow: 0 3px 10px rgb(147 197 253 / 0.7);
+    }
+    .status {
+      font-weight: 700;
+      font-size: 1.25rem;
+      margin-bottom: 1.5rem;
+      color: var(--heading);
+      min-height: 32px;
+      user-select: none;
+      text-align: center;
+      width: 100%;
+      max-width: 320px;
+    }
+    .board-container {
+      width: 100%;
+      overflow: auto;
+      display: flex;
+      justify-content: center;
+    }
+    .board {
+      display: grid;
+      gap: 0;
+      user-select: none;
+    }
+    .dot {
+      grid-column: span 1;
+      grid-row: span 1;
+      width: var(--dot-size);
+      height: var(--dot-size);
+      background-color: var(--heading);
+      border-radius: 50%;
+      justify-self: center;
+      align-self: center;
+    }
+    .edge.horizontal {
+      background-color: var(--line-unclaimed);
+      width: var(--box-size);
+      height: var(--edge-thickness);
+      justify-self: center;
+      align-self: center;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      transition:
+        background-color var(--transition-duration),
+        transform var(--transition-duration);
+    }
+    .edge.horizontal:hover:not(.claimed) {
+      background-color: var(--line-hover);
+      transform: scaleX(1.1) scaleY(1.05);
+    }
+    .edge.vertical {
+      background-color: var(--line-unclaimed);
+      width: var(--edge-thickness);
+      height: var(--box-size);
+      justify-self: center;
+      align-self: center;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      transition:
+        background-color var(--transition-duration),
+        transform var(--transition-duration);
+    }
+    .edge.vertical:hover:not(.claimed) {
+      background-color: var(--line-hover);
+      transform: scaleX(1.05) scaleY(1.1);
+    }
+    /* Claimed edges */
+    .edge.claimed.you {
+      background-color: var(--player-you);
+      cursor: default;
+      box-shadow: 0 0 8px var(--player-you);
+      transform: scale(1);
+    }
+    .edge.claimed.friend {
+      background-color: var(--player-friend);
+      cursor: default;
+      box-shadow: 0 0 8px var(--player-friend);
+      transform: scale(1);
+    }
+    .edge.claimed.bot {
+      background-color: var(--player-bot);
+      cursor: default;
+      box-shadow: 0 0 8px var(--player-bot);
+      transform: scale(1);
+    }
+    /* Boxes on odd rows & odd cols */
+    .box {
+      width: var(--box-size);
+      height: var(--box-size);
+      border-radius: var(--border-radius);
+      box-sizing: border-box;
+      background-color: transparent;
+      user-select: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: 700;
+      font-size: 1.5rem;
+      color: transparent;
+      transition: background-color var(--transition-duration), color var(--transition-duration);
+    }
+    .box.you {
+      background-color: #dbeafe;
+      color: var(--player-you);
+      box-shadow: 0 0 12px #3b82f699 inset;
+    }
+    .box.friend {
+      background-color: #d1fae5;
+      color: var(--player-friend);
+      box-shadow: 0 0 12px #10b98199 inset;
+    }
+    .box.bot {
+      background-color: #fed7aa;
+      color: var(--player-bot);
+      box-shadow: 0 0 12px #fb923c99 inset;
+    }
+    /* Scores */
+    .scores {
+      margin-top: 2rem;
+      font-weight: 600;
+      font-size: 1.15rem;
+      color: var(--heading);
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      user-select: none;
+      width: 100%;
+      max-width: 420px;
+    }
+    .scores span {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .color-block {
+      width: 18px;
+      height: 18px;
+      border-radius: 0.4rem;
+    }
+    .color-you { background-color: var(--player-you); }
+    .color-friend { background-color: var(--player-friend); }
+    .color-bot { background-color: var(--player-bot); }
+    /* Restart button */
+    button.restart {
+      margin-top: 2.5rem;
+      background-color: var(--heading);
+      color: white;
+      font-weight: 700;
+      border: none;
+      padding: 0.75rem 2rem;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      transition: background-color 0.25s;
+      font-family: inherit;
+      font-size: 1rem;
+      user-select: none;
+      max-width: 200px;
+      width: 100%;
+    }
+    button.restart:hover, button.restart:focus-visible {
+      background-color: var(--player-you);
+      outline: none;
+    }
+    @media (max-width: 480px) {
+      .selectors {
+        flex-direction: column;
+      }
+      .mode-select, .size-select {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Dots and Boxes</h1>
+  <div class="controls">
+    <div class="control-group">
+      <label>Game Mode</label>
+      <div class="selectors">
+        <div class="mode-select" role="radiogroup" aria-label="Select game mode">
+          <button type="button" class="mode-btn active" role="radio" aria-checked="true" tabindex="0" data-mode="friend">You vs Friend</button>
+          <button type="button" class="mode-btn" role="radio" aria-checked="false" tabindex="-1" data-mode="bot">You vs Bot</button>
+        </div>
+      </div>
+    </div>
+    <div class="control-group">
+      <label>Board Size</label>
+      <div class="selectors">
+        <div class="size-select" role="radiogroup" aria-label="Select board size">
+          <button type="button" class="size-btn active" role="radio" aria-checked="true" tabindex="0" data-size="3">3x3</button>
+          <button type="button" class="size-btn" role="radio" aria-checked="false" tabindex="-1" data-size="4">4x4</button>
+          <button type="button" class="size-btn" role="radio" aria-checked="false" tabindex="-1" data-size="5">5x5</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="status" aria-live="polite" aria-atomic="true" id="status">Your turn (Blue)</div>
+  <div class="board-container">
+    <div class="board" role="grid" aria-label="Dots and Boxes game board"></div>
+  </div>
+  <div class="scores" aria-label="Scores">
+    <span><div class="color-block color-you" aria-hidden="true"></div> You: <span id="score-you">0</span></span>
+    <span id="score-friend-container"><div class="color-block color-friend" aria-hidden="true"></div> Friend: <span id="score-friend">0</span></span>
+    <span id="score-bot-container" style="display:none;"><div class="color-block color-bot" aria-hidden="true"></div> Bot: <span id="score-bot">0</span></span>
+  </div>
+  <button class="restart" aria-label="Restart game">Restart Game</button>
+
+  <script>
+    (function() {
+      let n = 4; // Default size
+      const boardEl = document.querySelector('.board');
+      const statusEl = document.getElementById('status');
+      const scoreYouEl = document.getElementById('score-you');
+      const scoreFriendEl = document.getElementById('score-friend');
+      const scoreBotEl = document.getElementById('score-bot');
+      const scoreFriendContainer = document.getElementById('score-friend-container');
+      const scoreBotContainer = document.getElementById('score-bot-container');
+      const restartBtn = document.querySelector('button.restart');
+      const modeButtons = document.querySelectorAll('.mode-btn');
+      const sizeButtons = document.querySelectorAll('.size-btn');
+
+      let dim;
+      let hEdges, vEdges, boxes;
+      
+      let gameMode = 'friend'; // 'friend' or 'bot'
+      let currentPlayer = 'you';
+      let score = { you: 0, friend: 0, bot: 0 };
+      let isGameOver = false;
+
+      function calculateBoxSize() {
+        // Adjust box size based on board size to fit the screen
+        if (n <= 3) return 80;
+        if (n === 4) return 60;
+        return 50; // For 5x5 and larger
+      }
+
+      function updateBoardSize() {
+        const boxSize = calculateBoxSize();
+        boardEl.style.setProperty('--box-size', `${boxSize}px`);
+        boardEl.style.gridTemplateColumns = `repeat(${dim}, ${boxSize}px)`;
+        boardEl.style.gridTemplateRows = `repeat(${dim}, ${boxSize}px)`;
+      }
+
+      function createBoard() {
+        boardEl.innerHTML = '';
+        dim = 2 * n + 1;
+        updateBoardSize();
+        
+        for (let r = 0; r < dim; r++) {
+          for (let c = 0; c < dim; c++) {
+            let cell;
+            const isDot = (r % 2 === 0 && c % 2 === 0);
+            const isBox = (r % 2 === 1 && c % 2 === 1);
+            const isHorizontalEdge = (r % 2 === 0 && c % 2 === 1);
+            const isVerticalEdge = (r % 2 === 1 && c % 2 === 0);
+            if (isDot) {
+              cell = document.createElement('div');
+              cell.className = 'dot';
+            } else if (isBox) {
+              cell = document.createElement('div');
+              cell.className = 'box';
+              cell.dataset.row = (r - 1) / 2;
+              cell.dataset.col = (c - 1) / 2;
+              cell.setAttribute('aria-live', 'polite');
+            } else if (isHorizontalEdge) {
+              cell = document.createElement('div');
+              cell.className = 'edge horizontal';
+              cell.dataset.row = r / 2;
+              cell.dataset.col = (c - 1) / 2;
+              cell.setAttribute('role', 'button');
+              cell.setAttribute('tabindex', '0');
+              cell.setAttribute('aria-pressed', 'false');
+              cell.setAttribute('aria-label', `Horizontal edge row ${r / 2 + 1} column ${(c - 1) / 2 + 1}`);
+              cell.addEventListener('click', () => tryClaimEdge(cell));
+              cell.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  tryClaimEdge(cell);
+                }
+              });
+            } else if (isVerticalEdge) {
+              cell = document.createElement('div');
+              cell.className = 'edge vertical';
+              cell.dataset.row = (r - 1) / 2;
+              cell.dataset.col = c / 2;
+              cell.setAttribute('role', 'button');
+              cell.setAttribute('tabindex', '0');
+              cell.setAttribute('aria-pressed', 'false');
+              cell.setAttribute('aria-label', `Vertical edge row ${(r - 1) / 2 + 1} column ${c / 2 + 1}`);
+              cell.addEventListener('click', () => tryClaimEdge(cell));
+              cell.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  tryClaimEdge(cell);
+                }
+              });
+            }
+            if (cell) boardEl.appendChild(cell);
+          }
+        }
+      }
+
+      function initState() {
+        hEdges = Array(n + 1).fill(0).map(() => Array(n).fill(null));
+        vEdges = Array(n).fill(0).map(() => Array(n + 1).fill(null));
+        boxes = Array(n).fill(0).map(() => Array(n).fill(null));
+        score = { you: 0, friend: 0, bot: 0 };
+        currentPlayer = 'you';
+        isGameOver = false;
+        updateScores();
+        updateStatus();
+      }
+
+      function tryClaimEdge(cell) {
+        if (isGameOver) return;
+        if ((gameMode === 'bot' && currentPlayer === 'bot') || (gameMode === 'friend' && currentPlayer !== 'you' && currentPlayer !== 'friend')) return;
+        let r = Number(cell.dataset.row);
+        let c = Number(cell.dataset.col);
+        let claimed = false;
+        if (cell.classList.contains('horizontal')) {
+          if (!hEdges[r][c]) {
+            hEdges[r][c] = currentPlayer;
+            claimed = true;
+            claimUIEdge(cell, currentPlayer);
+          }
+        } else if (cell.classList.contains('vertical')) {
+          if (!vEdges[r][c]) {
+            vEdges[r][c] = currentPlayer;
+            claimed = true;
+            claimUIEdge(cell, currentPlayer);
+          }
+        }
+        if (claimed) {
+          let gotBox = checkForBoxes(r, c, cell.classList.contains('horizontal') ? 'h' : 'v', currentPlayer);
+          if (!gotBox) switchTurn();
+          else updateStatus();
+        }
+      }
+
+      function claimUIEdge(cell, player) {
+        cell.classList.add('claimed', player);
+        cell.setAttribute('aria-pressed', 'true');
+        cell.tabIndex = -1;
+        cell.style.cursor = 'default';
+      }
+
+      function checkForBoxes(r, c, type, player) {
+        let gotBox = false;
+        function isCompleteBox(br, bc) {
+          return hEdges[br][bc] && hEdges[br + 1][bc] && vEdges[br][bc] && vEdges[br][bc + 1];
+        }
+        const boxesToCheck = [];
+        if (type === 'h') {
+          if (r > 0) boxesToCheck.push({ r: r - 1, c });
+          if (r < n) boxesToCheck.push({ r, c });
+        } else {
+          if (c > 0) boxesToCheck.push({ r, c: c - 1 });
+          if (c < n) boxesToCheck.push({ r, c });
+        }
+        for (const b of boxesToCheck) {
+          if (b.r >= 0 && b.r < n && b.c >= 0 && b.c < n && !boxes[b.r][b.c] && isCompleteBox(b.r, b.c)) {
+            boxes[b.r][b.c] = player;
+            gotBox = true;
+            claimUIBox(b.r, b.c, player);
+            score[player]++;
+            updateScores();
+          }
+        }
+        return gotBox;
+      }
+
+      function claimUIBox(r, c, player) {
+        const rowGrid = 2 * r + 1;
+        const colGrid = 2 * c + 1;
+        const boxIndex = rowGrid * dim + colGrid;
+        const boxEls = boardEl.children;
+        const box = boxEls[boxIndex];
+        if (box) {
+          box.classList.add(player);
+          if (player === 'you') box.textContent = '●';
+          else if (player === 'friend') box.textContent = '◯';
+          else box.textContent = '■';
+          box.setAttribute('aria-label', `Box claimed by ${player === 'you' ? 'You' : player === 'friend' ? 'Friend' : 'Bot'}`);
+        }
+      }
+
+      function updateScores() {
+        scoreYouEl.textContent = score.you;
+        scoreFriendEl.textContent = score.friend;
+        scoreBotEl.textContent = score.bot;
+      }
+
+      function updateStatus() {
+        if (isGameOver) {
+          if (gameMode === 'bot') {
+            if (score.you > score.bot) statusEl.textContent = 'Game over. You win! 🎉';
+            else if (score.bot > score.you) statusEl.textContent = 'Game over. Bot wins! 🤖';
+            else statusEl.textContent = "Game over. It's a tie 🤝";
+          } else {
+            if (score.you > score.friend) statusEl.textContent = 'Game over. You win! 🎉';
+            else if (score.friend > score.you) statusEl.textContent = 'Game over. Friend wins! 🎉';
+            else statusEl.textContent = "Game over. It's a tie 🤝";
+          }
+          return;
+        }
+        if (currentPlayer === 'you') {
+          statusEl.textContent = 'Your turn (Blue)';
+          statusEl.style.color = 'var(--player-you)';
+        } else if (currentPlayer === 'friend') {
+          statusEl.textContent = 'Friend\'s turn (Green)';
+          statusEl.style.color = 'var(--player-friend)';
+        } else {
+          statusEl.textContent = 'Bot\'s turn (Orange)';
+          statusEl.style.color = 'var(--player-bot)';
+        }
+      }
+
+      function switchTurn() {
+        if (checkGameOver()) return;
+
+        if (gameMode === 'friend') {
+          currentPlayer = currentPlayer === 'you' ? 'friend' : 'you';
+        } else {
+          currentPlayer = currentPlayer === 'you' ? 'bot' : 'you';
+        }
+        updateStatus();
+
+        if (currentPlayer === 'bot' && !isGameOver) {
+          setTimeout(botMove, 300);
+        }
+      }
+
+      function checkGameOver() {
+        const totalBoxes = n * n;
+        const claimedBoxes = score.you + (gameMode === 'friend' ? score.friend : score.bot);
+        if (claimedBoxes === totalBoxes) {
+          isGameOver = true;
+          updateStatus();
+          return true;
+        }
+        return false;
+      }
+
+      function botMove() {
+        if (isGameOver) return;
+        let priorityEdges = [];
+        let normalEdges = [];
+
+        for (let r = 0; r <= n; r++) {
+          for (let c = 0; c < n; c++) {
+            if (!hEdges[r][c]) {
+              if (wouldCompleteBox(r, c, 'h')) priorityEdges.push({ type: 'h', r, c });
+              else normalEdges.push({ type: 'h', r, c });
+            }
+          }
+        }
+        for (let r = 0; r < n; r++) {
+          for (let c = 0; c <= n; c++) {
+            if (!vEdges[r][c]) {
+              if (wouldCompleteBox(r, c, 'v')) priorityEdges.push({ type: 'v', r, c });
+              else normalEdges.push({ type: 'v', r, c });
+            }
+          }
+        }
+
+        const moves = priorityEdges.length ? priorityEdges : normalEdges;
+        if (!moves.length) return;
+
+        const move = moves[Math.floor(Math.random() * moves.length)];
+        claimBotEdge(move.type, move.r, move.c);
+      }
+
+      function wouldCompleteBox(r, c, type) {
+        function isBoxComplete(br, bc) {
+          return hEdges[br][bc] && hEdges[br + 1][bc] && vEdges[br][bc] && vEdges[br][bc + 1];
+        }
+        if (type === 'h') {
+          if (r > 0 && boxes[r-1][c] === null && isBoxComplete(r - 1, c)) return true;
+          if (r < n && boxes[r][c] === null && isBoxComplete(r, c)) return true;
+        } else {
+          if (c > 0 && boxes[r][c-1] === null && isBoxComplete(r, c - 1)) return true;
+          if (c < n && boxes[r][c] === null && isBoxComplete(r, c)) return true;
+        }
+        return false;
+      }
+
+      function claimBotEdge(type, r, c) {
+        if (type === 'h') {
+          hEdges[r][c] = 'bot';
+          const index = r * 2 * dim + (c * 2 + 1);
+          const el = boardEl.children[index];
+          claimUIEdge(el, 'bot');
+          const gotBox = checkForBoxes(r, c, 'h', 'bot');
+          if (!gotBox) switchTurn();
+          else updateStatus();
+        } else {
+          vEdges[r][c] = 'bot';
+          const index = (r * 2 + 1) * dim + (c * 2);
+          const el = boardEl.children[index];
+          claimUIEdge(el, 'bot');
+          const gotBox = checkForBoxes(r, c, 'v', 'bot');
+          if (!gotBox) switchTurn();
+          else updateStatus();
+        }
+      }
+
+      // Mode switching UI
+      modeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (btn.classList.contains('active')) return;
+          modeButtons.forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-checked', 'false');
+            b.setAttribute('tabindex', '-1');
+          });
+          btn.classList.add('active');
+          btn.setAttribute('aria-checked', 'true');
+          btn.setAttribute('tabindex', '0');
+          gameMode = btn.dataset.mode;
+          if (gameMode === 'friend') {
+            scoreFriendContainer.style.display = 'inline-flex';
+            scoreBotContainer.style.display = 'none';
+            currentPlayer = 'you';
+          } else {
+            scoreFriendContainer.style.display = 'none';
+            scoreBotContainer.style.display = 'inline-flex';
+            currentPlayer = 'you';
+          }
+          initState();
+          createBoard();
+          updateStatus();
+          updateScores();
+        });
+        btn.addEventListener('keydown', e => {
+          if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+            e.preventDefault();
+            let idx = Array.from(modeButtons).indexOf(document.activeElement);
+            if (e.key === 'ArrowRight') idx = (idx + 1) % modeButtons.length;
+            else idx = (idx - 1 + modeButtons.length) % modeButtons.length;
+            modeButtons[idx].focus();
+          }
+        });
+      });
+
+      // Size switching UI
+      sizeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (btn.classList.contains('active')) return;
+          sizeButtons.forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-checked', 'false');
+            b.setAttribute('tabindex', '-1');
+          });
+          btn.classList.add('active');
+          btn.setAttribute('aria-checked', 'true');
+          btn.setAttribute('tabindex', '0');
+          n = parseInt(btn.dataset.size);
+          initState();
+          createBoard();
+          updateStatus();
+          updateScores();
+        });
+        btn.addEventListener('keydown', e => {
+          if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+            e.preventDefault();
+            let idx = Array.from(sizeButtons).indexOf(document.activeElement);
+            if (e.key === 'ArrowRight') idx = (idx + 1) % sizeButtons.length;
+            else idx = (idx - 1 + sizeButtons.length) % sizeButtons.length;
+            sizeButtons[idx].focus();
+          }
+        });
+      });
+
+      restartBtn.addEventListener('click', () => {
+        initState();
+        createBoard();
+        updateStatus();
+        updateScores();
+      });
+
+      // Initialize
+      initState();
+      createBoard();
+      updateStatus();
+      updateScores();
+    })();
+  </script>
+</body>
+</html>
