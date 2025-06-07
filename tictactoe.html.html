@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tic Tac Toe</title>
+<style>
+  body, html {
+    margin:0; padding:0; height:100vh;
+    display:flex; justify-content:center; align-items:center;
+    background: #222; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select:none;
+  }
+  #container {
+    text-align:center;
+    color:#eee;
+  }
+  #start-menu {
+    margin-bottom: 20px;
+  }
+  #game {
+    display: grid;
+    gap: 5px;
+    background: #333;
+    padding: 5px;
+    border-radius: 12px;
+    box-shadow: 0 0 25px 3px #00ffeeaa;
+    margin: 0 auto;
+  }
+  .cell {
+    background: #111;
+    font-size: 64px;
+    color: #eee;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border-radius: 8px;
+    user-select:none;
+    aspect-ratio: 1/1;
+    width: 100px;
+  }
+  .cell:hover {
+    background: #333;
+  }
+  .cell.winning {
+    background-color: #0066ff;
+    color: #fff;
+    font-weight: bold;
+  }
+  #status {
+    margin-top: 20px;
+    font-size: 1.3em;
+    user-select:none;
+  }
+  button {
+    cursor: pointer;
+    margin: 10px 5px;
+    padding: 10px 24px;
+    font-weight: bold;
+    font-size: 1.1em;
+    border-radius: 8px;
+    border: none;
+    background: #00ffee;
+    color: #111;
+    box-shadow: 0 0 16px #00ffeeaa;
+    user-select:none;
+  }
+  button:hover {
+    background: #0099cc;
+    color: white;
+  }
+  #exit-btn {
+    background: #ff5555;
+    box-shadow: 0 0 16px #ff5555aa;
+  }
+  #exit-btn:hover {
+    background: #cc0000;
+  }
+  #mode-selection {
+    display: none;
+    margin-top: 20px;
+  }
+  #main-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h1 {
+    margin-bottom: 30px;
+    font-size: 2.5em;
+    color: #00ffee;
+    text-shadow: 0 0 10px #00ffeeaa;
+  }
+  .option-group {
+    margin: 15px 0;
+    padding: 15px;
+   
+   
+  }
+  .option-label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #00ffee;
+    text-shadow: 0 0 5px #00ffeeaa;
+  }
+  select {
+    padding: 12px 15px;
+    font-size: 1em;
+    border-radius: 8px;
+    border: 2px solid #00ffee;
+    background: #333;
+    color: white;
+    margin: 5px 0;
+    width: 100%;
+    max-width: 300px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300ffee'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 20px;
+  }
+  select:hover {
+    background-color: #444;
+    box-shadow: 0 0 10px #00ffee55;
+  }
+  select:focus {
+    outline: none;
+    border-color: #00aaff;
+    box-shadow: 0 0 15px #00aaffaa;
+  }
+  @media (max-width: 600px) {
+    .cell {
+      width: 70px;
+      font-size: 48px;
+    }
+    .option-group {
+      padding: 10px;
+      margin: 10px 0;
+    }
+    select {
+      padding: 10px 12px;
+      font-size: 0.9em;
+    }
+  }
+  #btn-bot, #btn-friend {
+    width: 100%;
+    max-width: 300px;
+    margin: 5px 0;
+  }
+  #back-btn {
+    margin-top: 20px;
+    width: 100%;
+    max-width: 300px;
+    background: #24e4da;
+  }
+  #back-btn:hover {
+    background: #21a4bb;
+  }
+</style>
+</head>
+<body>
+<div id="container">
+  <div id="start-menu">
+    <div id="main-menu">
+      <h1>Tic Tac Toe</h1>
+      <button id="start-btn">Start Game</button>
+      <button id="menu-btn" style="display:none">Menu</button>
+    </div>
+    <div id="mode-selection">
+      <h2>Game Settings</h2>
+      
+      <div class="option-group">
+        <label class="option-label">Game Mode:</label>
+        <button id="btn-bot">Play vs Bot</button>
+        <button id="btn-friend">Play vs Friend</button>
+      </div>
+      
+      <div class="option-group">
+        <label class="option-label">Difficulty Level:</label>
+        <select id="difficulty">
+          <option value="easy">Easy (Random)</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard (Unbeatable)</option>
+        </select>
+      </div>
+      
+      <div class="option-group">
+        <label class="option-label">Board Size:</label>
+        <select id="board-size">
+          <option value="3">3x3 (Classic)</option>
+          <option value="5">5x5 (Extended)</option>
+        </select>
+      </div>
+      
+      <button id="back-btn">Back</button>
+    </div>
+  </div>
+  <div id="game" hidden></div>
+  <div id="status" hidden>Turn: X</div>
+  <button id="restart" hidden>Restart</button>
+  <button id="exit-btn" hidden>Exit to Menu</button>
+</div>
+
+<script>
+(() => {
+  const startMenu = document.getElementById('start-menu');
+  const mainMenu = document.getElementById('main-menu');
+  const startBtn = document.getElementById('start-btn');
+  const menuBtn = document.getElementById('menu-btn');
+  const modeSelection = document.getElementById('mode-selection');
+  const btnBot = document.getElementById('btn-bot');
+  const btnFriend = document.getElementById('btn-friend');
+  const backBtn = document.getElementById('back-btn');
+  const game = document.getElementById('game');
+  const status = document.getElementById('status');
+  const restartBtn = document.getElementById('restart');
+  const exitBtn = document.getElementById('exit-btn');
+  const difficultySelect = document.getElementById('difficulty');
+  const boardSizeSelect = document.getElementById('board-size');
+
+  let cells = [];
+  let board = [];
+  let currentPlayer = 'X';
+  let running = false;
+  let gameMode = 'bot';
+  let difficulty = 'easy';
+  let boardSize = 3;
+  let winningCells = [];
+
+  // Sound effects
+  const placeXSound = new Audio('https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg');
+  const placeOSound = new Audio('https://actions.google.com/sounds/v1/cartoon/pop.ogg');
+  const winSound = new Audio('https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg');
+  const drawSound = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg');
+
+  function playSound(snd) {
+    snd.currentTime = 0;
+    snd.play().catch(() => {});
+  }
+
+  function showModeSelection() {
+    mainMenu.style.display = 'none';
+    modeSelection.style.display = 'block';
+    menuBtn.style.display = 'block';
+  }
+
+  function hideModeSelection() {
+    mainMenu.style.display = 'flex';
+    modeSelection.style.display = 'none';
+    menuBtn.style.display = 'none';
+  }
+
+  function createGameBoard() {
+    game.innerHTML = '';
+    cells = [];
+    boardSize = parseInt(boardSizeSelect.value);
+    
+    // Set grid template based on board size
+    game.style.gridTemplateColumns = `repeat(${boardSize}, 1fr)`;
+    game.style.gridTemplateRows = `repeat(${boardSize}, 1fr)`;
+    
+    // Create cells
+    for (let i = 0; i < boardSize * boardSize; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.index = i;
+      cell.addEventListener('click', handleCellClick);
+      game.appendChild(cell);
+      cells.push(cell);
+    }
+    
+    // Adjust cell size for larger boards
+    const cellSize = boardSize === 3 ? 100 : 70;
+    cells.forEach(cell => {
+      cell.style.width = `${cellSize}px`;
+      cell.style.fontSize = `${boardSize === 3 ? 64 : 48}px`;
+    });
+    
+    board = Array(boardSize * boardSize).fill(null);
+  }
+
+  function startGame(mode) {
+    gameMode = mode;
+    difficulty = difficultySelect.value;
+    boardSize = parseInt(boardSizeSelect.value);
+    
+    createGameBoard();
+    startMenu.hidden = true;
+    game.hidden = false;
+    status.hidden = false;
+    restartBtn.hidden = false;
+    exitBtn.hidden = false;
+    resetGame();
+  }
+
+  function exitToMenu() {
+    startMenu.hidden = false;
+    game.hidden = true;
+    status.hidden = true;
+    restartBtn.hidden = true;
+    exitBtn.hidden = true;
+    hideModeSelection();
+  }
+
+  function resetGame() {
+    board.fill(null);
+    currentPlayer = 'X';
+    running = true;
+    winningCells = [];
+    cells.forEach(cell => {
+      cell.textContent = '';
+      cell.classList.remove('winning');
+    });
+    updateStatus();
+  }
+
+  function updateStatus() {
+    if(running){
+      status.textContent = `Turn: ${currentPlayer}`;
+    }
+  }
+
+  function checkWin() {
+    // For 3x3 board
+    if (boardSize === 3) {
+      const winningCombos = [
+        [0,1,2],[3,4,5],[6,7,8], // rows
+        [0,3,6],[1,4,7],[2,5,8], // columns
+        [0,4,8],[2,4,6]           // diagonals
+      ];
+      
+      for (const combo of winningCombos) {
+        const [a,b,c] = combo;
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+          winningCells = combo;
+          return true;
+        }
+      }
+    } 
+    // For 5x5 board (need 4 in a row)
+    else if (boardSize === 5) {
+      // Check rows
+      for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 2; col++) {
+          const idx = row * 5 + col;
+          if (board[idx] && 
+              board[idx] === board[idx+1] && 
+              board[idx] === board[idx+2] && 
+              board[idx] === board[idx+3]) {
+            winningCells = [idx, idx+1, idx+2, idx+3];
+            return true;
+          }
+        }
+      }
+      
+      // Check columns
+      for (let col = 0; col < 5; col++) {
+        for (let row = 0; row < 2; row++) {
+          const idx = row * 5 + col;
+          if (board[idx] && 
+              board[idx] === board[idx+5] && 
+              board[idx] === board[idx+10] && 
+              board[idx] === board[idx+15]) {
+            winningCells = [idx, idx+5, idx+10, idx+15];
+            return true;
+          }
+        }
+      }
+      
+      // Check diagonals (top-left to bottom-right)
+      for (let row = 0; row < 2; row++) {
+        for (let col = 0; col < 2; col++) {
+          const idx = row * 5 + col;
+          if (board[idx] && 
+              board[idx] === board[idx+6] && 
+              board[idx] === board[idx+12] && 
+              board[idx] === board[idx+18]) {
+            winningCells = [idx, idx+6, idx+12, idx+18];
+            return true;
+          }
+        }
+      }
+      
+      // Check diagonals (top-right to bottom-left)
+      for (let row = 0; row < 2; row++) {
+        for (let col = 3; col < 5; col++) {
+          const idx = row * 5 + col;
+          if (board[idx] && 
+              board[idx] === board[idx+4] && 
+              board[idx] === board[idx+8] && 
+              board[idx] === board[idx+12]) {
+            winningCells = [idx, idx+4, idx+8, idx+12];
+            return true;
+          }
+        }
+      }
+    }
+    
+    winningCells = [];
+    return false;
+  }
+
+  function highlightWinningCells() {
+    winningCells.forEach(i => cells[i].classList.add('winning'));
+  }
+
+  function handleCellClick(e) {
+    if (!running) return;
+    const idx = Number(e.target.dataset.index);
+    if (board[idx] !== null) return;
+
+    makeMove(idx);
+
+    if (running && gameMode === 'bot' && currentPlayer === 'O') {
+      setTimeout(aiMove, 300);
+    }
+  }
+
+  function makeMove(idx) {
+    board[idx] = currentPlayer;
+    cells[idx].textContent = currentPlayer;
+    if(currentPlayer==='X') playSound(placeXSound);
+    else playSound(placeOSound);
+
+    if(checkWin()){
+      running = false;
+      status.textContent = `Player ${currentPlayer} Wins!`;
+      highlightWinningCells();
+      playSound(winSound);
+    } else if(!board.includes(null)){
+      running = false;
+      status.textContent = "It's a Draw!";
+      playSound(drawSound);
+    } else {
+      currentPlayer = currentPlayer==='X'?'O':'X';
+      updateStatus();
+    }
+  }
+
+  function aiMove() {
+    if(!running) return;
+    
+    const available = board.map((v,i) => v===null ? i : null).filter(i=>i!==null);
+    if(available.length===0) return;
+    
+    let choice;
+    
+    if (difficulty === 'easy') {
+      // Random moves
+      choice = available[Math.floor(Math.random()*available.length)];
+    } 
+    else if (difficulty === 'medium') {
+      // Try to win if possible, otherwise block player, otherwise random
+      choice = findWinningMove('O') || findWinningMove('X') || 
+               available[Math.floor(Math.random()*available.length)];
+    } 
+    else if (difficulty === 'hard') {
+      // Try to win, block, take center, take corners, then random
+      choice = findWinningMove('O') || findWinningMove('X') || 
+               (boardSize === 3 && board[Math.floor(board.length/2)] === null ? Math.floor(board.length/2) : null) || // center
+               findEmptyCorner() || 
+               available[Math.floor(Math.random()*available.length)];
+    }
+    
+    if (choice !== null && choice !== undefined) {
+      makeMove(choice);
+    }
+  }
+
+  function findWinningMove(player) {
+    for (const idx of board.map((v,i) => v===null ? i : null).filter(i=>i!==null)) {
+      const original = board[idx];
+      board[idx] = player;
+      const isWin = checkWin();
+      board[idx] = original;
+      if (isWin) return idx;
+    }
+    return null;
+  }
+
+  function findEmptyCorner() {
+    if (boardSize === 3) {
+      const corners = [0, 2, 6, 8];
+      for (const corner of corners) {
+        if (board[corner] === null) return corner;
+      }
+    } else if (boardSize === 5) {
+      const corners = [0, 4, 20, 24];
+      for (const corner of corners) {
+        if (board[corner] === null) return corner;
+      }
+    }
+    return null;
+  }
+
+  // Initialize event listeners
+  function init() {
+    // Set default values
+    difficultySelect.value = 'easy';
+    boardSizeSelect.value = '3';
+    
+    // Event listeners
+    restartBtn.addEventListener('click', resetGame);
+    exitBtn.addEventListener('click', exitToMenu);
+    startBtn.addEventListener('click', showModeSelection);
+    menuBtn.addEventListener('click', hideModeSelection);
+    backBtn.addEventListener('click', hideModeSelection);
+    btnBot.addEventListener('click', () => startGame('bot'));
+    btnFriend.addEventListener('click', () => startGame('friend'));
+  }
+
+  // Initialize the game
+  init();
+})();
+</script>
+</body>
+</html>
