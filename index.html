@@ -239,27 +239,31 @@
     </footer>
     
     <script>
-        // Simple JavaScript for interactive elements
-        document.addEventListener('DOMContentLoaded', function() {
-            // Search functionality would go here
-            const searchInput = document.querySelector('.search-bar input');
-            searchInput.addEventListener('focus', function() {
-                this.parentElement.style.boxShadow = '0 0 0 2px #4ecdc4';
-            });
-            
-            searchInput.addEventListener('blur', function() {
-                this.parentElement.style.boxShadow = 'none';
-            });
-            
-            // Game card click handlers
-            const gameCards = document.querySelectorAll('.game-card');
-            gameCards.forEach(card => {
-                card.addEventListener('click', function() {
-                    // In a real implementation, this would navigate to the game page
-                    alert('Game page would load here!');
-                });
-            });
+      document.addEventListener('DOMContentLoaded', function () {
+      const searchInput = document.getElementById('searchInput');
+      const searchButton = document.getElementById('searchButton');
+      const gameCards = document.querySelectorAll('.game-card');
+
+      function searchGames() {
+        const query = searchInput.value.toLowerCase();
+
+        gameCards.forEach(card => {
+          const title = card.querySelector('.game-title').innerText.toLowerCase();
+          if (title.includes(query)) {
+            card.style.display = 'block';
+          } else {
+            card.style.display = 'none';
+          }
         });
+      }
+
+      searchButton.addEventListener('click', searchGames);
+      searchInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          searchGames();
+        }
+      });
+    });
     </script>
 </body>
 </html>
